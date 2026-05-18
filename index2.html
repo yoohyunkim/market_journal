@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a08;
+    --surface: #111110;
+    --surface2: #1a1a18;
+    --border: #2a2a26;
+    --accent: #c8f060;
+    --accent2: #f0c840;
+    --accent3: #60d0f0;
+    --text: #e8e8e0;
+    --text-dim: #888880;
+    --text-faint: #444440;
+    --red: #f06060;
+    --green: #60d080;
+    --mono: 'DM Mono', monospace;
+    --display: 'Bebas Neue', sans-serif;
+    --body: 'Noto Sans KR', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10,10,8,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+
+  .logo {
+    font-family: var(--display);
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.6); }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .date-display {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* MAIN LAYOUT */
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: 72px;
+    height: fit-content;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 2px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  /* ENTRY LIST */
+  .entry-list {
+    list-style: none;
+  }
+
+  .entry-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .entry-item:last-child { border-bottom: none; }
+  .entry-item:hover { background: var(--surface2); }
+  .entry-item.active {
+    background: var(--surface2);
+    border-left: 2px solid var(--accent);
+  }
+
+  .entry-date {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .entry-preview {
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .entry-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 1px;
+    letter-spacing: 0.5px;
+  }
+  .tag-market { background: rgba(200,240,96,0.15); color: var(--accent); }
+  .tag-stock  { background: rgba(96,208,240,0.15); color: var(--accent3); }
+  .tag-industry { background: rgba(240,200,64,0.15); color: var(--accent2); }
+  .tag-macro  { background: rgba(240,96,96,0.15); color: var(--red); }
+
+  /* MAIN CONTENT */
+  .main {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* EDITOR SECTION */
+  .editor-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .editor-toolbar {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+  }
+
+  .date-input {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    padding: 5px 10px;
+    border-radius: 1px;
+    outline: none;
+    cursor: pointer;
+  }
+  .date-input:focus { border-color: var(--accent); }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 1px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--text-dim); color: var(--text); }
+  .btn-accent {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-accent:hover { background: var(--accent); color: var(--bg); }
+  .btn-ai {
+    border-color: var(--accent3);
+    color: var(--accent3);
+  }
+  .btn-ai:hover { background: var(--accent3); color: var(--bg); }
+  .btn-save {
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+  .btn-save:hover { background: var(--accent2); color: var(--bg); }
+  .btn-danger {
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .btn-danger:hover { background: var(--red); color: var(--bg); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .tag-toggle {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 1px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .tag-toggle.active-market { border-color: var(--accent); color: var(--accent); background: rgba(200,240,96,0.1); }
+  .tag-toggle.active-stock  { border-color: var(--accent3); color: var(--accent3); background: rgba(96,208,240,0.1); }
+  .tag-toggle.active-industry{ border-color: var(--accent2); color: var(--accent2); background: rgba(240,200,64,0.1); }
+  .tag-toggle.active-macro  { border-color: var(--red); color: var(--red); background: rgba(240,96,96,0.1); }
+  .tag-toggle:not([class*=active]) { color: var(--text-faint); }
+
+  /* SECTIONS */
+  .sections-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .section-block {
+    background: var(--surface);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .section-dot-market   { width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0; }
+  .section-dot-stock    { width:6px;height:6px;border-radius:50%;background:var(--accent3);flex-shrink:0; }
+  .section-dot-industry { width:6px;height:6px;border-radius:50%;background:var(--accent2);flex-shrink:0; }
+  .section-dot-watch    { width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0; }
+
+  textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.8;
+    resize: none;
+    outline: none;
+    min-height: 160px;
+    caret-color: var(--accent);
+  }
+  textarea::placeholder { color: var(--text-faint); }
+
+  /* MEMO / FREE NOTE */
+  .memo-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .memo-header {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .memo-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1.9;
+    resize: none;
+    outline: none;
+    padding: 20px;
+    min-height: 120px;
+    caret-color: var(--accent);
+  }
+
+  /* AI PANEL */
+  .ai-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .ai-header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .ai-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 1px;
+  }
+  .ai-status.running { color: var(--accent3); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: 0.3; } }
+
+  .ai-body {
+    padding: 20px;
+  }
+
+  .ai-prompt-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .ai-prompt-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 1px;
+    outline: none;
+  }
+  .ai-prompt-input:focus { border-color: var(--accent3); }
+  .ai-prompt-input::placeholder { color: var(--text-faint); }
+
+  .ai-output {
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--text);
+    font-weight: 300;
+    white-space: pre-wrap;
+    min-height: 60px;
+    padding: 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 1px;
+    font-family: var(--body);
+  }
+  .ai-output:empty::before {
+    content: 'AI 요약이 여기에 표시됩니다 — 위 버튼을 눌러 생성하거나 커스텀 질문을 입력하세요';
+    color: var(--text-faint);
+    font-style: italic;
+  }
+
+  .ai-apply-row {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  /* SETTINGS */
+  .settings-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .settings-overlay.open { display: flex; }
+
+  .settings-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    width: 480px;
+    max-width: 95vw;
+    overflow: hidden;
+  }
+
+  .settings-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .settings-title {
+    font-family: var(--display);
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .settings-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .settings-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .settings-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .settings-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 1px;
+    outline: none;
+    width: 100%;
+  }
+  .settings-input:focus { border-color: var(--accent3); }
+
+  .settings-hint {
+    font-size: 11px;
+    color: var(--text-faint);
+    line-height: 1.6;
+  }
+
+  .settings-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast-item {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 10px 16px;
+    border-radius: 1px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    animation: slideIn 0.2s ease;
+    letter-spacing: 0.5px;
+  }
+  .toast-item.success { border-color: var(--green); color: var(--green); }
+  .toast-item.error   { border-color: var(--red); color: var(--red); }
+  .toast-item.info    { border-color: var(--accent3); color: var(--accent3); }
+
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 60px 20px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+  .empty-state-icon { font-size: 36px; opacity: 0.4; }
+
+  /* VIEW MODE */
+  .view-entry {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .view-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .view-date-big {
+    font-family: var(--display);
+    font-size: 32px;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+
+  .view-body { padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+
+  .view-section { display: flex; flex-direction: column; gap: 10px; }
+
+  .view-section-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .view-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .view-section-content {
+    font-size: 14px;
+    line-height: 1.9;
+    color: var(--text);
+    font-weight: 300;
+    white-space: pre-wrap;
+  }
+  .view-section-content:empty { color: var(--text-faint); font-style: italic; }
+  .view-section-content:empty::before { content: '내용 없음'; }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .container { grid-template-columns: 1fr; }
+    .sidebar { position: static; max-height: none; }
+    .sections-grid { grid-template-columns: 1fr; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* GIST BADGE */
+  .gist-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 1px;
+    background: rgba(200,240,96,0.1);
+    border: 1px solid rgba(200,240,96,0.3);
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .gist-badge.not-linked {
+    background: rgba(240,96,96,0.1);
+    border-color: rgba(240,96,96,0.3);
+    color: var(--red);
+  }
+
+  .flex-1 { flex: 1; }
+  .ml-auto { margin-left: auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    MARKET JOURNAL
+  </div>
+  <div class="header-right">
+    <span class="date-display" id="headerDate"></span>
+    <span class="gist-badge not-linked" id="gistBadge" onclick="openSettings()">GIST ✗</span>
+    <button class="btn btn-accent" onclick="openNewEntry()">+ NEW ENTRY</button>
+    <button class="btn" onclick="openSettings()">⚙ SETTINGS</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">ENTRIES</span>
+        <span class="panel-title" id="entryCount" style="color:var(--accent)">0</span>
+      </div>
+      <ul class="entry-list" id="entryList">
+        <li class="empty-state" style="display:flex">
+          <span class="empty-state-icon">📋</span>
+          <span>아직 기록이 없습니다</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">QUICK STATS</span>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">TOTAL ENTRIES</span>
+          <span style="font-family:var(--mono);font-size:16px;color:var(--accent);" id="statTotal">0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">THIS MONTH</span>
+          <span style="font-family:var(--mono);font-size:16px;color:var(--accent2);" id="statMonth">0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">THIS WEEK</span>
+          <span style="font-family:var(--mono);font-size:16px;color:var(--accent3);" id="statWeek">0</span>
+        </div>
+        <div style="height:1px;background:var(--border);"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">LAST SAVED</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-faint);" id="statLastSaved">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">STORAGE</span>
+          <span style="font-family:var(--mono);font-size:10px;" id="statStorage">LOCAL</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- EDITOR -->
+    <div class="editor-area" id="editorArea">
+      <div class="editor-toolbar">
+        <div class="toolbar-group">
+          <input type="date" class="date-input" id="entryDate">
+        </div>
+        <div class="toolbar-sep"></div>
+        <div class="toolbar-group" style="gap:6px;">
+          <button class="tag-toggle" data-tag="market"  onclick="toggleTag('market')"># MARKET</button>
+          <button class="tag-toggle" data-tag="stock"   onclick="toggleTag('stock')"># STOCK</button>
+          <button class="tag-toggle" data-tag="industry" onclick="toggleTag('industry')"># INDUSTRY</button>
+          <button class="tag-toggle" data-tag="macro"   onclick="toggleTag('macro')"># MACRO</button>
+        </div>
+        <div class="toolbar-sep"></div>
+        <div class="toolbar-group ml-auto">
+          <button class="btn btn-ai" onclick="runAISummary()">✦ AI 요약</button>
+          <button class="btn btn-save" onclick="saveEntry()">↑ SAVE</button>
+          <button class="btn" onclick="closeEditor()" id="cancelBtn">✕</button>
+        </div>
+      </div>
+
+      <div class="sections-grid">
+        <div class="section-block">
+          <div class="section-label">
+            <div class="section-dot-market"></div>
+            마켓 오버뷰
+          </div>
+          <textarea id="secMarket" placeholder="오늘의 주요 지수, 거시 경제 흐름, 주목할 시장 움직임&#10;예) S&P500 +0.8%, 달러 강세, 금리 동향..."></textarea>
+        </div>
+        <div class="section-block">
+          <div class="section-label">
+            <div class="section-dot-stock"></div>
+            주식 / 종목
+          </div>
+          <textarea id="secStock" placeholder="관심 종목 움직임, 실적 발표, 매수·매도 포인트&#10;예) NVDA 실적 서프라이즈, 005930 외인 순매수..."></textarea>
+        </div>
+        <div class="section-block">
+          <div class="section-label">
+            <div class="section-dot-industry"></div>
+            산업 / 섹터
+          </div>
+          <textarea id="secIndustry" placeholder="주목할 산업 트렌드, 섹터 로테이션, 규제·정책 변화&#10;예) 반도체 공급망 이슈, AI 인프라 투자 확대..."></textarea>
+        </div>
+        <div class="section-block">
+          <div class="section-label">
+            <div class="section-dot-watch"></div>
+            요주의 / 와치리스트
+          </div>
+          <textarea id="secWatch" placeholder="내일 봐야 할 것들, 리스크 요인, 팔로우업 필요 항목&#10;예) FOMC 발언 확인, OO 실적 발표 대기..."></textarea>
+        </div>
+      </div>
+
+      <div class="memo-block" style="border:none;border-top:1px solid var(--border);">
+        <div class="memo-header">
+          <span class="panel-title">FREE MEMO</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text-faint);">글자 제한 없음 — 생각나는 것 다 적어두기</span>
+        </div>
+        <textarea class="memo-textarea" id="secMemo" placeholder="그 외 메모, 아이디어, 가설, 인사이트 등 자유롭게..."></textarea>
+      </div>
+    </div>
+
+    <!-- AI PANEL -->
+    <div class="ai-panel" id="aiPanel" style="display:none;">
+      <div class="ai-header">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="panel-title" style="color:var(--accent3);">✦ AI ASSISTANT</span>
+          <span class="ai-status" id="aiStatus">READY</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ai" style="font-size:10px;padding:4px 10px;" onclick="runQuickPrompt('오늘 입력한 내용을 바탕으로 핵심 인사이트와 투자 포인트를 정리해줘')">핵심 정리</button>
+          <button class="btn btn-ai" style="font-size:10px;padding:4px 10px;" onclick="runQuickPrompt('내일 주목해야 할 리스크와 기회 요인을 분석해줘')">내일 체크포인트</button>
+          <button class="btn btn-ai" style="font-size:10px;padding:4px 10px;" onclick="runQuickPrompt('현재 시장 상황에서 유의해야 할 매크로 리스크를 정리해줘')">매크로 리스크</button>
+          <button class="btn" style="font-size:10px;padding:4px 10px;" onclick="clearAI()">초기화</button>
+        </div>
+      </div>
+      <div class="ai-body">
+        <div class="ai-prompt-row">
+          <input class="ai-prompt-input" id="aiPromptInput" placeholder="커스텀 질문 입력... (예: 반도체 섹터에서 지금 가장 주목할 포인트는?)" onkeydown="if(event.key==='Enter')runCustomPrompt()">
+          <button class="btn btn-ai" onclick="runCustomPrompt()">→ 실행</button>
+        </div>
+        <div class="ai-output" id="aiOutput"></div>
+        <div class="ai-apply-row">
+          <button class="btn" onclick="applyAIToMemo()" id="applyAIBtn" style="display:none;">↓ 메모에 추가</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW ENTRY -->
+    <div class="view-entry" id="viewEntry">
+      <div class="view-header">
+        <div>
+          <div class="view-date-big" id="viewDate"></div>
+          <div id="viewTags" style="display:flex;gap:6px;margin-top:6px;"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-accent" onclick="editCurrentEntry()">✏ 편집</button>
+          <button class="btn btn-danger" onclick="deleteCurrentEntry()">🗑 삭제</button>
+          <button class="btn" onclick="closeView()">✕</button>
+        </div>
+      </div>
+      <div class="view-body" id="viewBody"></div>
+    </div>
+
+    <!-- EMPTY / WELCOME -->
+    <div id="welcomeState" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:80px 20px;text-align:center;">
+      <div style="font-family:var(--display);font-size:64px;letter-spacing:6px;color:var(--text-faint);opacity:0.4;">MJ</div>
+      <div>
+        <div style="font-family:var(--mono);font-size:13px;color:var(--text-dim);letter-spacing:2px;">MARKET JOURNAL</div>
+        <div style="font-family:var(--body);font-size:13px;color:var(--text-faint);margin-top:8px;">매일의 시장 흐름을 기록하고, AI로 인사이트를 얻으세요</div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+        <button class="btn btn-accent" onclick="openNewEntry()" style="padding:10px 24px;">+ 오늘의 기록 시작</button>
+        <button class="btn" onclick="openSettings()" style="padding:10px 24px;">⚙ GitHub 설정</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- SETTINGS -->
+<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-panel">
+    <div class="settings-header">
+      <span class="settings-title">SETTINGS</span>
+      <button class="btn" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-field">
+        <div class="settings-label">GitHub Personal Access Token</div>
+        <input type="password" class="settings-input" id="settingToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        <div class="settings-hint">
+          GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)<br>
+          권한: <strong>gist</strong> 체크 필요
+        </div>
+      </div>
+      <div class="settings-field">
+        <div class="settings-label">Gist ID (처음엔 비워두세요 — 자동 생성)</div>
+        <input type="text" class="settings-input" id="settingGistId" placeholder="자동으로 채워집니다">
+        <div class="settings-hint">
+          기존 Gist가 있으면 ID를 입력하세요. 없으면 첫 저장 시 자동 생성됩니다.
+        </div>
+      </div>
+      <div class="settings-field">
+        <div class="settings-label">Claude API Key</div>
+        <input type="password" class="settings-input" id="settingClaudeKey" placeholder="sk-ant-xxxxxxxxxxxxxxxxxxxx">
+        <div class="settings-hint">
+          AI 요약 기능에 사용됩니다. <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent3);">console.anthropic.com</a>에서 발급
+        </div>
+      </div>
+    </div>
+    <div class="settings-footer">
+      <button class="btn" onclick="closeSettings()">취소</button>
+      <button class="btn btn-accent" onclick="saveSettings()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast"></div>
+
+<script>
+// ─── STATE ──────────────────────────────────────────────────────
+let entries = [];        // [{id, date, tags[], market, stock, industry, watch, memo, aiSummary}]
+let currentId = null;    // viewing/editing
+let activeTags = [];
+let settings = {};
+let aiOutputText = '';
+let mode = 'welcome';    // 'welcome' | 'editor' | 'view'
+
+// ─── INIT ────────────────────────────────────────────────────────
+function init() {
+  settings = JSON.parse(localStorage.getItem('mj_settings') || '{}');
+  const saved = localStorage.getItem('mj_entries');
+  if (saved) entries = JSON.parse(saved);
+
+  updateHeaderDate();
+  renderEntryList();
+  updateStats();
+  updateGistBadge();
+  setInterval(updateHeaderDate, 60000);
+}
+
+function updateHeaderDate() {
+  const now = new Date();
+  document.getElementById('headerDate').textContent =
+    now.toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', weekday:'short' });
+}
+
+// ─── MODE SWITCHING ──────────────────────────────────────────────
+function showMode(m) {
+  mode = m;
+  document.getElementById('editorArea').style.display = m === 'editor' ? 'block' : 'none';
+  document.getElementById('aiPanel').style.display    = m === 'editor' ? 'block' : 'none';
+  document.getElementById('viewEntry').style.display  = m === 'view'   ? 'block' : 'none';
+  document.getElementById('welcomeState').style.display = m === 'welcome' ? 'flex' : 'none';
+}
+
+function openNewEntry() {
+  currentId = null;
+  activeTags = [];
+  clearEditorFields();
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('entryDate').value = today;
+  renderTagToggles();
+  clearAI();
+  showMode('editor');
+  document.getElementById('cancelBtn').style.display = entries.length > 0 ? '' : 'none';
+}
+
+function closeEditor() {
+  if (entries.length === 0) showMode('welcome');
+  else if (currentId) openViewEntry(currentId);
+  else showMode('welcome');
+}
+
+function clearEditorFields() {
+  ['secMarket','secStock','secIndustry','secWatch','secMemo'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+// ─── TAG MANAGEMENT ──────────────────────────────────────────────
+function toggleTag(tag) {
+  const idx = activeTags.indexOf(tag);
+  if (idx > -1) activeTags.splice(idx, 1);
+  else activeTags.push(tag);
+  renderTagToggles();
+}
+
+function renderTagToggles() {
+  document.querySelectorAll('.tag-toggle').forEach(btn => {
+    const tag = btn.dataset.tag;
+    btn.className = 'tag-toggle';
+    if (activeTags.includes(tag)) btn.classList.add(`active-${tag}`);
+  });
+}
+
+// ─── SAVE ENTRY ──────────────────────────────────────────────────
+async function saveEntry() {
+  const date = document.getElementById('entryDate').value;
+  if (!date) { toast('날짜를 선택해주세요', 'error'); return; }
+
+  const entry = {
+    id: currentId || `entry_${Date.now()}`,
+    date,
+    tags: [...activeTags],
+    market:   document.getElementById('secMarket').value,
+    stock:    document.getElementById('secStock').value,
+    industry: document.getElementById('secIndustry').value,
+    watch:    document.getElementById('secWatch').value,
+    memo:     document.getElementById('secMemo').value,
+    aiSummary: aiOutputText,
+    updatedAt: new Date().toISOString()
+  };
+
+  const idx = entries.findIndex(e => e.id === entry.id);
+  if (idx > -1) entries[idx] = entry;
+  else entries.unshift(entry);
+
+  entries.sort((a, b) => b.date.localeCompare(a.date));
+
+  saveLocal();
+  currentId = entry.id;
+  renderEntryList();
+  updateStats();
+
+  toast('로컬 저장 완료', 'success');
+
+  // Gist 저장
+  if (settings.githubToken) {
+    toast('GitHub Gist에 저장 중...', 'info');
+    const ok = await saveToGist();
+    if (ok) toast('GitHub Gist 저장 완료 ✓', 'success');
+  }
+
+  showMode('view');
+  openViewEntry(entry.id);
+}
+
+function saveLocal() {
+  localStorage.setItem('mj_entries', JSON.stringify(entries));
+  localStorage.setItem('mj_settings', JSON.stringify(settings));
+  document.getElementById('statLastSaved').textContent =
+    new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+}
+
+// ─── GIST ─────────────────────────────────────────────────────────
+async function saveToGist() {
+  try {
+    const content = JSON.stringify({ entries, exportedAt: new Date().toISOString() }, null, 2);
+    const body = {
+      description: 'Market Journal — Auto saved',
+      public: false,
+      files: { 'market-journal.json': { content } }
+    };
+
+    const url = settings.gistId
+      ? `https://api.github.com/gists/${settings.gistId}`
+      : 'https://api.github.com/gists';
+    const method = settings.gistId ? 'PATCH' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `token ${settings.githubToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (!settings.gistId) {
+      settings.gistId = data.id;
+      saveLocal();
+      document.getElementById('settingGistId').value = data.id;
+      toast(`Gist 생성됨: ${data.id}`, 'info');
+    }
+    updateGistBadge();
+    return true;
+  } catch (e) {
+    toast(`Gist 저장 실패: ${e.message}`, 'error');
+    return false;
+  }
+}
+
+async function loadFromGist() {
+  if (!settings.githubToken || !settings.gistId) {
+    toast('GitHub Token과 Gist ID를 먼저 설정해주세요', 'error');
+    return;
+  }
+  try {
+    toast('Gist에서 불러오는 중...', 'info');
+    const res = await fetch(`https://api.github.com/gists/${settings.gistId}`, {
+      headers: { Authorization: `token ${settings.githubToken}` }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const file = data.files['market-journal.json'];
+    if (!file) throw new Error('market-journal.json 파일 없음');
+    const parsed = JSON.parse(file.content);
+    entries = parsed.entries || [];
+    saveLocal();
+    renderEntryList();
+    updateStats();
+    toast(`${entries.length}개 항목 불러오기 완료`, 'success');
+    if (entries.length > 0) openViewEntry(entries[0].id);
+  } catch (e) {
+    toast(`불러오기 실패: ${e.message}`, 'error');
+  }
+}
+
+function updateGistBadge() {
+  const badge = document.getElementById('gistBadge');
+  if (settings.githubToken && settings.gistId) {
+    badge.textContent = 'GIST ✓';
+    badge.className = 'gist-badge';
+    document.getElementById('statStorage').textContent = 'GIST';
+    document.getElementById('statStorage').style.color = 'var(--accent)';
+  } else if (settings.githubToken) {
+    badge.textContent = 'GIST ~';
+    badge.className = 'gist-badge';
+    document.getElementById('statStorage').textContent = 'LOCAL+';
+    document.getElementById('statStorage').style.color = 'var(--accent2)';
+  } else {
+    badge.textContent = 'GIST ✗';
+    badge.className = 'gist-badge not-linked';
+    document.getElementById('statStorage').textContent = 'LOCAL';
+    document.getElementById('statStorage').style.color = 'var(--text-faint)';
+  }
+}
+
+// ─── VIEW ENTRY ──────────────────────────────────────────────────
+function openViewEntry(id) {
+  const entry = entries.find(e => e.id === id);
+  if (!entry) return;
+  currentId = id;
+
+  document.getElementById('viewDate').textContent =
+    new Date(entry.date + 'T00:00:00').toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
+
+  const tagsEl = document.getElementById('viewTags');
+  tagsEl.innerHTML = entry.tags.map(t => `<span class="tag tag-${t}">${t.toUpperCase()}</span>`).join('');
+
+  const sections = [
+    { key:'market',   label:'마켓 오버뷰',     dot:'market' },
+    { key:'stock',    label:'주식 / 종목',      dot:'stock' },
+    { key:'industry', label:'산업 / 섹터',      dot:'industry' },
+    { key:'watch',    label:'요주의 / 와치리스트', dot:'watch' },
+    { key:'memo',     label:'FREE MEMO',        dot:'watch' },
+  ];
+  if (entry.aiSummary) sections.push({ key:'aiSummary', label:'AI SUMMARY', dot:'stock' });
+
+  document.getElementById('viewBody').innerHTML = sections
+    .filter(s => entry[s.key])
+    .map(s => `
+      <div class="view-section">
+        <div class="view-section-title">
+          <div class="section-dot-${s.dot}"></div>
+          ${s.label}
+        </div>
+        <div class="view-section-content">${escHtml(entry[s.key])}</div>
+      </div>
+    `).join('');
+
+  // highlight active in sidebar
+  document.querySelectorAll('.entry-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+
+  showMode('view');
+}
+
+function closeView() {
+  currentId = null;
+  showMode('welcome');
+  document.querySelectorAll('.entry-item').forEach(el => el.classList.remove('active'));
+}
+
+function editCurrentEntry() {
+  const entry = entries.find(e => e.id === currentId);
+  if (!entry) return;
+  activeTags = [...entry.tags];
+  document.getElementById('entryDate').value = entry.date;
+  document.getElementById('secMarket').value   = entry.market || '';
+  document.getElementById('secStock').value    = entry.stock || '';
+  document.getElementById('secIndustry').value = entry.industry || '';
+  document.getElementById('secWatch').value    = entry.watch || '';
+  document.getElementById('secMemo').value     = entry.memo || '';
+  aiOutputText = entry.aiSummary || '';
+  document.getElementById('aiOutput').textContent = aiOutputText;
+  if (aiOutputText) document.getElementById('applyAIBtn').style.display = '';
+  renderTagToggles();
+  clearAI(false);
+  showMode('editor');
+}
+
+function deleteCurrentEntry() {
+  if (!confirm('이 기록을 삭제할까요?')) return;
+  entries = entries.filter(e => e.id !== currentId);
+  saveLocal();
+  renderEntryList();
+  updateStats();
+  currentId = null;
+  showMode(entries.length > 0 ? 'welcome' : 'welcome');
+  toast('삭제되었습니다', 'info');
+}
+
+// ─── RENDER LIST ─────────────────────────────────────────────────
+function renderEntryList() {
+  const list = document.getElementById('entryList');
+  if (entries.length === 0) {
+    list.innerHTML = '<li class="empty-state" style="display:flex"><span class="empty-state-icon">📋</span><span>아직 기록이 없습니다</span></li>';
+    return;
+  }
+  list.innerHTML = entries.map(entry => {
+    const d = new Date(entry.date + 'T00:00:00');
+    const dateStr = d.toLocaleDateString('ko-KR', { month:'2-digit', day:'2-digit', weekday:'short' });
+    const preview = (entry.market || entry.stock || entry.memo || '').substring(0, 40) || '내용 없음';
+    const tags = entry.tags.map(t => `<span class="tag tag-${t}">${t.toUpperCase()}</span>`).join('');
+    return `
+      <li class="entry-item${entry.id === currentId ? ' active' : ''}" data-id="${entry.id}" onclick="openViewEntry('${entry.id}')">
+        <div class="entry-date">${dateStr}</div>
+        <div class="entry-preview">${escHtml(preview)}</div>
+        <div class="entry-tags">${tags}</div>
+      </li>`;
+  }).join('');
+}
+
+// ─── STATS ───────────────────────────────────────────────────────
+function updateStats() {
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const weekAgo = new Date(now.getTime() - 7 * 86400000);
+
+  document.getElementById('statTotal').textContent = entries.length;
+  document.getElementById('statMonth').textContent = entries.filter(e => e.date.startsWith(thisMonth)).length;
+  document.getElementById('statWeek').textContent  = entries.filter(e => new Date(e.date) >= weekAgo).length;
+  document.getElementById('entryCount').textContent = entries.length;
+}
+
+// ─── AI ──────────────────────────────────────────────────────────
+async function runAISummary() {
+  const prompt = '아래 오늘의 마켓 저널 내용을 분석해서, 핵심 인사이트, 주목할 리스크, 내일 확인해야 할 포인트를 간결하게 정리해줘. 한국어로.';
+  await callAI(prompt);
+}
+
+async function runQuickPrompt(prompt) {
+  await callAI(prompt);
+}
+
+async function runCustomPrompt() {
+  const prompt = document.getElementById('aiPromptInput').value.trim();
+  if (!prompt) { toast('질문을 입력해주세요', 'error'); return; }
+  await callAI(prompt);
+  document.getElementById('aiPromptInput').value = '';
+}
+
+async function callAI(userPrompt) {
+  if (!settings.claudeKey) {
+    toast('Claude API Key를 먼저 설정해주세요 (⚙ Settings)', 'error');
+    return;
+  }
+
+  const entryContext = buildEntryContext();
+  const fullPrompt = `${entryContext}\n\n---\n질문: ${userPrompt}`;
+
+  const statusEl = document.getElementById('aiStatus');
+  const outputEl = document.getElementById('aiOutput');
+  statusEl.textContent = 'RUNNING...';
+  statusEl.className = 'ai-status running';
+  outputEl.textContent = '';
+  document.getElementById('applyAIBtn').style.display = 'none';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': settings.claudeKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: '당신은 금융 시장 전문 애널리스트입니다. 사용자의 마켓 저널 내용을 분석하고 투자 관점의 인사이트를 제공합니다. 답변은 간결하고 실용적으로, 한국어로 작성하세요.',
+        messages: [{ role: 'user', content: fullPrompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    aiOutputText = data.content[0].text;
+    outputEl.textContent = aiOutputText;
+    document.getElementById('applyAIBtn').style.display = '';
+    statusEl.textContent = 'DONE';
+    statusEl.className = 'ai-status';
+  } catch (e) {
+    toast(`AI 오류: ${e.message}`, 'error');
+    statusEl.textContent = 'ERROR';
+    statusEl.className = 'ai-status';
+  }
+}
+
+function buildEntryContext() {
+  const sections = [
+    { id: 'secMarket',   label: '마켓 오버뷰' },
+    { id: 'secStock',    label: '주식/종목' },
+    { id: 'secIndustry', label: '산업/섹터' },
+    { id: 'secWatch',    label: '요주의/와치리스트' },
+    { id: 'secMemo',     label: '자유 메모' },
+  ];
+  const date = document.getElementById('entryDate').value || new Date().toISOString().split('T')[0];
+  let ctx = `[마켓 저널 — ${date}]\n\n`;
+  sections.forEach(s => {
+    const val = document.getElementById(s.id).value.trim();
+    if (val) ctx += `## ${s.label}\n${val}\n\n`;
+  });
+  return ctx || '(아직 입력된 내용이 없습니다)';
+}
+
+function applyAIToMemo() {
+  const memo = document.getElementById('secMemo');
+  const divider = '\n\n─── AI SUMMARY ───\n';
+  memo.value = memo.value + divider + aiOutputText;
+  toast('메모에 추가됐어요', 'success');
+}
+
+function clearAI(resetOutput = true) {
+  if (resetOutput) {
+    aiOutputText = '';
+    document.getElementById('aiOutput').textContent = '';
+  }
+  document.getElementById('applyAIBtn').style.display = 'none';
+  document.getElementById('aiStatus').textContent = 'READY';
+  document.getElementById('aiStatus').className = 'ai-status';
+  document.getElementById('aiPromptInput').value = '';
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('settingToken').value    = settings.githubToken || '';
+  document.getElementById('settingGistId').value   = settings.gistId || '';
+  document.getElementById('settingClaudeKey').value = settings.claudeKey || '';
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('open');
+}
+
+function saveSettings() {
+  settings.githubToken = document.getElementById('settingToken').value.trim();
+  settings.gistId      = document.getElementById('settingGistId').value.trim();
+  settings.claudeKey   = document.getElementById('settingClaudeKey').value.trim();
+  saveLocal();
+  updateGistBadge();
+  closeSettings();
+  toast('설정 저장됨', 'success');
+  if (settings.githubToken && settings.gistId) {
+    if (confirm('Gist에서 최신 데이터를 불러올까요?')) loadFromGist();
+  }
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast-item ${type}`;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    if (mode === 'editor') saveEntry();
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+    e.preventDefault();
+    openNewEntry();
+  }
+});
+
+// Start
+init();
+</script>
+</body>
+</html>
